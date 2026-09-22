@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#08090d" />
+    <title>STRIKE//GRID — Fight Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top">STRIKE<span>//GRID</span></a>
+      <nav><a class="active" href="#events">แมตช์</a><a href="#rankings">สถิติ</a><a href="#how-to">วิธีเล่น</a><a href="#contact">ติดต่อ</a></nav>
+      <button class="points-button" id="open-slip"><span>◈</span><b id="balance">1,500</b> แต้ม <i id="slip-count">0</i></button>
+    </header>
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy"><p class="eyebrow">FIGHT INTELLIGENCE · VOL. 08</p><h1>อ่านเกมให้ขาด<br /><em>ก่อนระฆังดัง</em></h1><p>พื้นที่สำหรับแฟนกีฬาต่อสู้ วิเคราะห์สถิติ เลือกทีมที่เชียร์ และสะสมแต้มเพื่อความสนุก</p><a href="#events" class="primary">สำรวจแมตช์ <span>↘</span></a></div>
+        <div class="hero-ticker"><span class="pulse"></span> LIVE DATA <b>24</b> MATCHES TRACKED</div>
+      </section>
+      <section class="scoreboard" aria-label="ข้อมูลบัญชี"><div><span>แต้มพร้อมใช้</span><b id="balance-large">1,500 <small>PTS</small></b></div><div><span>แมตช์ที่เลือก</span><b id="chosen-count">0 <small>SLIPS</small></b></div><div><span>อัตราชนะจำลอง</span><b>68 <small>%</small></b></div><p>แต้มไม่มีมูลค่าเป็นเงินจริง · ใช้เพื่อความบันเทิงเท่านั้น</p></section>
+      <section class="main-content" id="events">
+        <div class="section-head"><div><p class="eyebrow red">UP NEXT</p><h2>แมตช์ที่น่าจับตา</h2></div><div class="filter-row"><button class="filter active" data-type="all">ทั้งหมด</button><button class="filter" data-type="Muay Thai">มวยไทย</button><button class="filter" data-type="MMA">MMA</button></div></div>
+        <div id="event-list" class="event-list"></div>
+      </section>
+      <section class="how-to" id="how-to"><p class="eyebrow red">PLAY FOR FUN</p><h2>เลือกทีม · ใช้แต้ม · ลุ้นผล</h2><div><article><b>01</b><h3>อ่านข้อมูล</h3><p>เปรียบเทียบฟอร์ม การชนะ และสไตล์การชกก่อนตัดสินใจ</p></article><article><b>02</b><h3>เลือกนักกีฬา</h3><p>เลือกผู้ชนะที่คุณเชียร์ พร้อมจำนวนแต้มที่ต้องการใช้</p></article><article><b>03</b><h3>สะสมแต้ม</h3><p>รับแต้มจำลองเมื่อผลลัพธ์ตรงกับการคาดการณ์ของคุณ</p></article></div></section>
+      <section class="contact" id="contact"><div><p class="eyebrow">GET IN THE RING</p><h2>มีเรื่องอยากบอกเรา?</h2><p>ส่งคำแนะนำ แจ้งข้อมูล หรือร่วมพูดคุยกับทีม STRIKE//GRID</p></div><div class="contact-actions"><a href="mailto:hello@strikegrid.example">✉ hello@strikegrid.example</a><button id="copy-contact">⧉ คัดลอกอีเมล</button><a href="https://instagram.com" target="_blank" rel="noreferrer">◎ @strikegrid.club</a></div></section>
+    </main>
+    <aside class="slip" id="slip" aria-hidden="true"><div class="slip-head"><div><p class="eyebrow red">YOUR PICKS</p><h2>บัตรเลือกทีม</h2></div><button id="close-slip" aria-label="ปิด">×</button></div><div id="slip-items" class="slip-items"><p class="empty">ยังไม่ได้เลือกนักกีฬา<br /><small>เลือกจากรายการแมตช์ด้านซ้าย</small></p></div><div class="slip-footer"><div><span>แต้มที่ใช้ทั้งหมด</span><b id="stake-total">0 PTS</b></div><button id="confirm-picks" class="primary" disabled>ยืนยันการเลือก</button></div></aside><div class="scrim" id="scrim"></div>
+    <dialog id="stats-modal"><button class="dialog-close" id="close-modal">×</button><div id="stats-content"></div></dialog><div class="toast" id="toast" role="status"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
