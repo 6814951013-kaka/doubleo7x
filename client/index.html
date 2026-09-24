@@ -1,35 +1,42 @@
 <!doctype html>
-<html lang="th">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#08090d" />
-    <title>RING//PULSE — Fight Intelligence</title>
+    <meta name="description" content="RING — fight intelligence, fan picks, and the stories behind every matchup." />
+    <title>RING — Fight Intelligence</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/auth.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#top">RING<span>//PULSE</span></a>
-      <nav><a class="active" href="#events">FIGHTS</a><a href="#rankings">RANKINGS</a><a href="#how-to">HOW IT WORKS</a><a href="#contact">CONTACT</a></nav>
-      <button class="points-button" id="open-slip"><span>◈</span><b id="balance">1,500</b> PTS <i id="slip-count">0</i></button>
+      <a class="brand" href="#top" aria-label="RING home">RING<span>FIGHT INTELLIGENCE</span></a>
+      <nav aria-label="Main navigation"><a class="active" href="#events">FIGHTS</a><a href="#rankings">RANKINGS</a><a href="#how-to">HOW IT WORKS</a></nav>
+      <div class="account-actions"><button class="points-button" id="open-slip" aria-label="Open your picks"><span>◆</span><b id="balance">1,500</b> PTS <i id="slip-count">0</i></button><button class="signin-button" id="auth-open">SIGN IN</button><div class="profile-button" id="profile-button" role="button" tabindex="0" hidden><span class="avatar" id="profile-avatar">R</span><span><b id="profile-name">FAN</b><small>FIGHT CLUB MEMBER</small></span><span class="profile-points"><b id="profile-points">1,500</b><small>PTS</small></span><span class="profile-menu" id="profile-menu"><button id="signout">SIGN OUT</button></span></div></div>
     </header>
     <main id="top">
       <section class="hero">
-        <div class="hero-copy"><p class="eyebrow">FIGHT INTELLIGENCE · VOL. 08</p><h1>READ THE FIGHT.<br /><em>OWN THE NIGHT.</em></h1><p>Pre-fight data, fighter form and fan picks — made for people who live for the bell.</p><a href="#events" class="primary">EXPLORE FIGHTS <span>↘</span></a></div>
+        <div class="hero-copy"><p class="eyebrow">FIGHT INTELLIGENCE · VOL. 08</p><h1>READ THE FIGHT.<br /><em>OWN THE NIGHT.</em></h1><p>Sharp fight data, fighter form, and fan picks. Get closer to every moment that matters.</p><a href="#events" class="primary">EXPLORE FIGHTS <span>↘</span></a></div>
+        <aside class="event-countdown"><span class="live-dot"></span><small>NEXT MAIN EVENT</small><b>NIGHT SHIFT <em>08</em></b><span class="countdown" id="countdown" aria-live="off">--d --h --m --s</span><small class="event-date">26 SEP · 19:30 ICT</small></aside>
         <div class="hero-ticker"><span class="pulse"></span> LIVE DATA <b>24</b> MATCHES TRACKED</div>
       </section>
-      <section class="scoreboard" aria-label="Account overview"><div><span>AVAILABLE POINTS</span><b id="balance-large">1,500 <small>PTS</small></b></div><div><span>ACTIVE PICKS</span><b id="chosen-count">0 <small>SLIPS</small></b></div><div><span>FAN HIT RATE</span><b>68 <small>%</small></b></div><p>PLAY WITH POINTS ONLY.<br />NO CASH. ALL FIGHT CULTURE.</p></section>
+      <section class="scoreboard" aria-label="Account overview"><div><span>AVAILABLE POINTS</span><b id="balance-large">1,500 <small>PTS</small></b></div><div><span>ACTIVE PICKS</span><b id="chosen-count">0 <small>SLIPS</small></b></div><div><span>FAN HIT RATE</span><b>68 <small>%</small></b></div><p id="account-note">SIGN IN TO SAVE YOUR PROFILE.<br />PLAY WITH POINTS ONLY.</p></section>
       <section class="main-content" id="events">
         <div class="section-head"><div><p class="eyebrow red">UP NEXT</p><h2>FEATURED FIGHTS</h2><span class="section-subtitle">PICK A SIDE. TRACK THE FORM. FEEL THE MOMENT.</span></div><div class="filter-row"><button class="filter active" data-type="all">ALL FIGHTS</button><button class="filter" data-type="MUAY THAI">MUAY THAI</button><button class="filter" data-type="MMA">MMA</button></div></div>
         <div id="event-list" class="event-list"></div>
       </section>
-      <section class="how-to" id="how-to"><p class="eyebrow red">PLAY FOR THE CULTURE</p><h2>STUDY · PICK · LOCK IN</h2><div><article><b>01</b><h3>SCAN THE DATA</h3><p>Compare form, finish rate and fighting style before you choose your side.</p></article><article><b>02</b><h3>MAKE YOUR PICK</h3><p>Back the fighter you believe in with your own virtual points.</p></article><article><b>03</b><h3>CHASE THE RUSH</h3><p>Track your predictions and build your fan record after every fight.</p></article></div></section>
-      <section class="contact" id="contact"><div><p class="eyebrow">GET IN THE RING</p><h2>LET'S TALK FIGHTS.</h2><p>Ideas, corrections, or a hot take? We want to hear it.</p></div><div class="contact-actions"><a href="mailto:hello@ringpulse.example">✉ hello@ringpulse.example</a><button id="copy-contact">⧉ COPY EMAIL ADDRESS</button><a href="https://instagram.com" target="_blank" rel="noreferrer">◎ @ringpulse.club</a></div></section>
+      <section class="ranking-strip" id="rankings"><div><p class="eyebrow red">THE CROWD KNOWS</p><h2>FAN RANKINGS</h2><p>Build your record with every fight. Rankings open when the season starts.</p></div><a href="#how-to" class="outline-link">HOW RANKINGS WORK <span>↗</span></a></section>
+      <section class="highlights"><div class="section-head"><div><p class="eyebrow red">BETWEEN THE BELLS</p><h2>FIGHT NIGHT RECAPS</h2><span class="section-subtitle">ORIGINAL STORIES FROM INSIDE THE RING.</span></div></div><div class="highlight-grid"><article class="highlight-card highlight-one"><span class="play-icon">▶</span><small>FIGHT BREAKDOWN · 08:42</small><h3>THE MOMENT<br />THAT CHANGED IT</h3></article><article class="highlight-card highlight-two"><span class="play-icon">▶</span><small>TRAINING ROOM · 12:16</small><h3>BUILT FOR<br />FIVE ROUNDS</h3></article><article class="highlight-card highlight-three"><span class="play-icon">▶</span><small>AFTER THE BELL · 06:08</small><h3>NO EASY<br />NIGHTS</h3></article></div></section>
+      <section class="how-to" id="how-to"><p class="eyebrow red">PLAY FOR THE CULTURE</p><h2>STUDY · PICK · LOCK IN</h2><div><article><b>01</b><h3>SCAN THE DATA</h3><p>Compare form, finish rate, and fighting style before you choose your side.</p></article><article><b>02</b><h3>MAKE YOUR PICK</h3><p>Back the fighter you believe in with your own virtual points.</p></article><article><b>03</b><h3>CHASE THE RUSH</h3><p>Track your predictions and build your fan record after every fight.</p></article></div></section>
+      <section class="contact" id="contact"><div><p class="eyebrow">GET IN THE RING</p><h2>LET'S TALK FIGHTS.</h2><p>Ideas, corrections, or a hot take? We want to hear it.</p></div><div class="contact-actions"><a href="mailto:hello@ring.example">✉ hello@ring.example</a><button id="copy-contact">COPY EMAIL ADDRESS</button><a href="https://instagram.com" target="_blank" rel="noreferrer">◎ @ring.club</a></div></section>
     </main>
-    <aside class="slip" id="slip" aria-hidden="true"><div class="slip-head"><div><p class="eyebrow red">YOUR PICKS</p><h2>บัตรเลือกทีม</h2></div><button id="close-slip" aria-label="ปิด">×</button></div><div id="slip-items" class="slip-items"><p class="empty">ยังไม่ได้เลือกนักกีฬา<br /><small>เลือกจากรายการแมตช์ด้านซ้าย</small></p></div><div class="slip-footer"><div><span>แต้มที่ใช้ทั้งหมด</span><b id="stake-total">0 PTS</b></div><button id="confirm-picks" class="primary" disabled>ยืนยันการเลือก</button></div></aside><div class="scrim" id="scrim"></div>
+    <aside class="slip" id="slip" aria-hidden="true"><div class="slip-head"><div><p class="eyebrow red">YOUR PICKS</p><h2>FIGHT CARD</h2></div><button id="close-slip" aria-label="Close picks">×</button></div><div id="slip-items" class="slip-items"></div><div class="slip-footer"><div><span>TOTAL POINTS</span><b id="stake-total">0 PTS</b></div><button id="confirm-picks" class="primary" disabled>CONFIRM PICKS</button></div></aside>
+    <div class="scrim" id="scrim"></div>
+    <div class="auth-overlay" id="auth-overlay" aria-hidden="true"><section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title"><button class="auth-close" id="auth-close" aria-label="Close sign in">×</button><p class="eyebrow red">YOUR SEAT IS WAITING</p><h2 id="auth-title">SIGN IN TO RING</h2><p class="auth-intro">Save your profile, points, and fight picks in one place.</p><div class="auth-tabs"><button class="auth-tab active" data-mode="login">SIGN IN</button><button class="auth-tab" data-mode="register">CREATE ACCOUNT</button></div><form id="auth-form"><label class="name-field" hidden>DISPLAY NAME<input name="name" autocomplete="name" maxlength="80" /></label><label>EMAIL ADDRESS<input name="email" type="email" autocomplete="email" required maxlength="254" /></label><label>PASSWORD<input name="password" type="password" autocomplete="current-password" required minlength="6" /></label><p class="auth-error" id="auth-error" role="alert"></p><button class="primary auth-submit" id="auth-submit" type="submit">SIGN IN <span>→</span></button></form><small class="auth-footnote">Your account is secured by the RING server.</small></section></div>
     <div class="toast" id="toast" role="status"></div>
     <script type="module" src="/app.js"></script>
   </body>
