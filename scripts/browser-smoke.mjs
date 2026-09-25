@@ -64,6 +64,15 @@ try {
   assert.equal(await evaluate('document.querySelector("#ticket-dialog").scrollWidth<=document.querySelector("#ticket-dialog").clientWidth'),true,'mobile dialog overflow');
   const mobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
   await writeFile(join(tmpdir(),'ring-mobile-booking.png'),Buffer.from(mobile.data,'base64'));
+  await evaluate('document.querySelector("#ticket-dialog").close();document.documentElement.style.scrollBehavior="auto";scrollTo(0,0)');
+  await evaluate('Promise.all([...document.images].map(img=>{img.loading="eager";return img.decode()}))');
+  assert.equal(await evaluate('[...document.images].every(img=>img.naturalWidth>0)'),true,'all athlete images load');
+  const heroMobile=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  await writeFile(join(tmpdir(),'ring-mobile-hero.png'),Buffer.from(heroMobile.data,'base64'));
+  await send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  await evaluate('document.querySelector("#athletes").scrollIntoView()');
+  const athleteShot=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  await writeFile(join(tmpdir(),'ring-athletes.png'),Buffer.from(athleteShot.data,'base64'));
   await evaluate('document.querySelector("#ticket-dialog").close();localStorage.setItem("ring-tickets-v1","broken json");localStorage.setItem("ring-game-v1","broken json")');
   await navigate('Page.reload'); await waitFor('document.querySelectorAll(".match-card").length===3');
   assert.equal(await evaluate('document.querySelector("#balance").textContent'),'1,500','corrupt storage fallback');
