@@ -1,27 +1,140 @@
-const authBase=(import.meta.env.VITE_API_URL||'/api/auth').replace(/\/$/,'');
-let authMode='login';
-const authOverlay=document.querySelector('#auth-overlay'),authForm=document.querySelector('#auth-form');
-function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function paintUser(user){document.querySelector('#auth-open').hidden=Boolean(user);document.querySelector('#profile-button').hidden=!user;if(user){document.querySelector('#profile-name').textContent=user.name;document.querySelector('#profile-avatar').textContent=(user.name||'R').trim().charAt(0).toUpperCase();document.querySelector('#profile-points').textContent=typeof balance==='number'?new Intl.NumberFormat('en-US').format(balance):'1,500';document.querySelector('#account-note').innerHTML='เข้าสู่ระบบแล้ว: '+escapeHtml(user.name).toUpperCase()+'.<br />พร้อมติดตามคู่ชกที่คุณชื่นชอบ'}else document.querySelector('#account-note').innerHTML='เข้าสู่ระบบเพื่อบันทึกโปรไฟล์<br />ใช้แต้มจำลองในการทายผลเท่านั้น'}
-function setAuthMode(mode,clearError=true){authMode=mode;document.querySelectorAll('.auth-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===mode));document.querySelector('.name-field').hidden=mode==='login';authForm.elements.name.required=mode==='register';authForm.elements.password.autocomplete=mode==='register'?'new-password':'current-password';document.querySelector('#auth-title').textContent=mode==='register'?'สมัครสมาชิก RING':'เข้าสู่ระบบ RING';document.querySelector('#auth-submit').innerHTML=mode==='register'?'สมัครสมาชิก <span>→</span>':'เข้าสู่ระบบ <span>→</span>';if(clearError)document.querySelector('#auth-error').textContent=''}
-function openAuth(){authOverlay.classList.add('show');authOverlay.setAttribute('aria-hidden','false');setTimeout(()=>authForm.elements.email.focus(),30)}
-function closeAuth(){authOverlay.classList.remove('show');authOverlay.setAttribute('aria-hidden','true')}
-document.querySelector('#auth-open').onclick=openAuth;document.querySelector('#auth-close').onclick=closeAuth;authOverlay.onclick=e=>{if(e.target===authOverlay)closeAuth()};document.querySelectorAll('.auth-tab').forEach(t=>t.onclick=()=>setAuthMode(t.dataset.mode));
-document.querySelector('#profile-button').onclick=e=>{if(e.target.closest('#signout'))return;document.querySelector('#profile-button').classList.toggle('menu-open')};document.querySelector('#profile-button').onkeydown=e=>{if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.currentTarget.classList.toggle('menu-open')}};
-document.querySelector('#signout').onclick=e=>{e.stopPropagation();localStorage.removeItem('ring-auth-token');paintUser(null);document.querySelector('#profile-button').classList.remove('menu-open')};
-authForm.onsubmit=async e=>{e.preventDefault();if(document.querySelector('#auth-submit').disabled)return;const submit=document.querySelector('#auth-submit'),data=Object.fromEntries(new FormData(authForm));document.querySelector('#auth-error').textContent='';submit.disabled=true;document.querySelectorAll('.auth-tab').forEach(t=>t.disabled=true);submit.textContent='กำลังเชื่อมต่อ…';try{const response=await fetch(`${authBase}/${authMode==='register'?'register':'login'}`,{method:'POST',signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error((response.status>=500?'ระบบเข้าสู่ระบบยังไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง':result.message)||'เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองอีกครั้ง');if(!result.token||!result.user)throw new Error('ระบบตอบกลับไม่ครบถ้วน กรุณาลองอีกครั้ง');localStorage.setItem('ring-auth-token',result.token);paintUser(result.user);closeAuth();authForm.reset();toast(authMode==='register'?'สมัครสมาชิกสำเร็จ':'ยินดีต้อนรับกลับ คุณ'+result.user.name.toUpperCase())}catch(error){document.querySelector('#auth-error').textContent=error.name==='TimeoutError'?'การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองอีกครั้ง':error.message==='Failed to fetch'?'เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง':error.message}finally{submit.disabled=false;setAuthMode(authMode,false);document.querySelectorAll('.auth-tab').forEach(t=>t.disabled=false)}};
-async function restoreSession(){const token=localStorage.getItem('ring-auth-token');if(!token)return;try{const response=await fetch(`${authBase}/me`,{headers:{Authorization:`Bearer ${token}`}});if(response.status===401){localStorage.removeItem('ring-auth-token');return}if(!response.ok)return;paintUser((await response.json()).user)}catch{/* Keep the session when the server is temporarily unavailable. */}}
-setAuthMode('login');restoreSession();
-const eventAt=new Date('2026-09-26T19:30:00+07:00').getTime();function tickCountdown(){const left=Math.max(0,eventAt-Date.now()),day=Math.floor(left/86400000),hour=Math.floor(left%86400000/3600000),minute=Math.floor(left%3600000/60000),second=Math.floor(left%60000/1000);document.querySelector('#countdown').textContent=left?`${String(day).padStart(2,'0')}d ${String(hour).padStart(2,'0')}h ${String(minute).padStart(2,'0')}m ${String(second).padStart(2,'0')}s`:'FIGHT NIGHT'}tickCountdown();setInterval(tickCountdown,1000);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAuth();close();document.querySelector('#profile-button').classList.remove('menu-open')}});
+﻿const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const format = value => new Intl.NumberFormat('th-TH').format(value);
+const money = value => `฿${format(value)}`;
+const read = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
+const write = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } };
+let toastTimer;
+function toast(message) { $('#toast').textContent = message; $('#toast').classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('show'), 3500); }
+function openModal(id) { const modal = $(id); if (!modal.open) modal.showModal(); }
+function content(title, body) { $('#content-body').innerHTML = `<h2 id="content-title">${escapeHtml(title)}</h2>${body}`; openModal('#content-dialog'); }
+$$('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
+$$('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target !== dialog) return; const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close(); }));
+$('#menu-toggle').onclick = () => { const expanded = $('#main-nav').classList.toggle('open'); $('#menu-toggle').setAttribute('aria-expanded', String(expanded)); $('#menu-toggle').setAttribute('aria-label', expanded ? 'ปิดเมนู' : 'เปิดเมนู'); };
+$$('#main-nav a').forEach(link => link.onclick = () => { $('#main-nav').classList.remove('open'); $('#menu-toggle').setAttribute('aria-expanded', 'false'); $('#menu-toggle').setAttribute('aria-label', 'เปิดเมนู'); });
 
-const matches=[
-{id:1,date:'26 SEP · 19:30',type:'MUAY THAI',title:'NIGHT SHIFT 08',division:'FLYWEIGHT · 135 LBS',a:{name:'ธันวา สายฟ้า',country:'THA',record:'18–3',win:78,ko:'9 KO',reach:'170 cm',style:'TECHNICIAN',form:['W · KO R2','W · DEC','W · TKO R3','L · DEC','W · KO R1']},b:{name:'มาร์โก เด ลา ครูซ',country:'ESP',record:'14–2',win:71,ko:'7 KO',reach:'173 cm',style:'PRESSURE',form:['W · DEC','W · KO R1','L · DEC','W · TKO R2','W · DEC']},image:'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=1200&q=90'},
-{id:2,date:'03 OCT · 20:00',type:'MMA',title:'CAGE THEORY 12',division:'LIGHTWEIGHT · 155 LBS',a:{name:'คิริน วงศ์วานิช',country:'THA',record:'11–1',win:84,ko:'5 KO',reach:'177 cm',style:'GRAPPLER',form:['W · SUB R2','W · DEC','W · TKO R1','W · SUB R3','L · DEC']},b:{name:'อาเดรียน โคล',country:'AUS',record:'16–5',win:64,ko:'8 KO',reach:'180 cm',style:'STRIKER',form:['L · DEC','W · KO R2','W · KO R1','W · DEC','L · SUB R2']},image:'https://images.unsplash.com/photo-1564419434663-c49967363849?auto=format&fit=crop&w=1200&q=90'},
-{id:3,date:'10 OCT · 19:30',type:'MUAY THAI',title:'NIGHT SHIFT 09',division:'BANTAMWEIGHT · 145 LBS',a:{name:'ปกรณ์ นครสวรรค์',country:'THA',record:'22–6',win:66,ko:'12 KO',reach:'175 cm',style:'CLINCH',form:['W · TKO R3','L · DEC','W · KO R2','W · DEC','W · KO R1']},b:{name:'ลูคัส วอล์คเกอร์',country:'GBR',record:'19–4',win:73,ko:'10 KO',reach:'178 cm',style:'COUNTER',form:['W · DEC','W · KO R3','L · DEC','W · KO R2','W · DEC']},image:'https://images.unsplash.com/photo-1591117207239-788bf8de6c3b?auto=format&fit=crop&w=1200&q=90'}];
-const $=s=>document.querySelector(s);let balance=Number(localStorage.getItem('strike-balance')||1500),picks=JSON.parse(localStorage.getItem('strike-picks')||'[]'),activeType='all',expandedMatch=null;const format=n=>new Intl.NumberFormat('th-TH').format(n);const save=()=>{localStorage.setItem('strike-balance',balance);localStorage.setItem('strike-picks',JSON.stringify(picks))};
-function history(f){return `<div class="form-guide"><p>ผลงาน 5 นัดล่าสุด <span>${f.name}</span></p><div>${f.form.map(r=>`<span class="${r[0]==='W'?'win':'loss'}" title="${r}">${r[0]}</span>`).join('')}</div><small>${f.form.join(' · ')}</small></div>`}function stats(m){let rows=[['อัตราชนะ',`${m.a.win}%`,`${m.b.win}%`],['ชนะน็อก',m.a.ko,m.b.ko],['ช่วงชก',m.a.reach,m.b.reach],['สไตล์การชก',m.a.style,m.b.style]];return `<section class="stats-drawer"><div class="drawer-title"><span>ข้อมูลนักกีฬา</span><b>สถิติก่อนชก</b></div><div class="stat-compare">${rows.map(r=>`<div><strong>${r[1]}</strong><span>${r[0]}</span><strong>${r[2]}</strong></div>`).join('')}</div><div class="history-grid">${history(m.a)}${history(m.b)}</div></section>`}
-function card(m){let p=picks.find(x=>x.matchId===m.id),open=expandedMatch===m.id;return `<article class="match-card"><div class="match-cover" style="background-image:linear-gradient(90deg,#08090dbf,#08090d24),url('${m.image}')"><span>${m.type}</span><p>${m.date}</p><h3>${m.title}</h3><i>RING//PULSE ORIGINAL</i></div><div class="match-body"><div class="match-label"><span>${m.division}</span><button class="stats-button ${open?'open':''}" data-stats="${m.id}">${open?'ซ่อนสถิติ −':'ดูสถิตินักกีฬา +'}</button></div><div class="fighters"><button class="fighter ${p?.fighter==='a'?'selected':''}" data-pick="a" data-match="${m.id}"><small>${m.a.country}</small><strong>${m.a.name}</strong><em>${m.a.record}</em><i>${m.a.win}% อัตราชนะ</i></button><b>VS</b><button class="fighter ${p?.fighter==='b'?'selected':''}" data-pick="b" data-match="${m.id}"><small>${m.b.country}</small><strong>${m.b.name}</strong><em>${m.b.record}</em><i>${m.b.win}% อัตราชนะ</i></button></div>${open?stats(m):''}<div class="pick-area"><label><span>แต้มที่ใช้</span><input type="number" min="10" step="10" value="${p?.stake||100}" data-stake="${m.id}" /></label><button class="add-pick ${p?'added':''}" data-add="${m.id}" ${p?'':'disabled'}>${p?'✓ เพิ่มในรายการแล้ว':'เลือกนักกีฬา'}</button></div></div></article>`}
-function renderMatches(){let shown=matches.filter(m=>activeType==='all'||m.type===activeType);$('#event-list').innerHTML=shown.map(card).join('');bind()};function bind(){document.querySelectorAll('.fighter').forEach(b=>b.onclick=()=>{let id=+b.dataset.match,p=picks.find(x=>x.matchId===id);p?p.fighter=b.dataset.pick:picks.push({matchId:id,fighter:b.dataset.pick,stake:100});save();renderMatches();renderSlip()});document.querySelectorAll('[data-stake]').forEach(i=>i.oninput=()=>{let p=picks.find(x=>x.matchId===+i.dataset.stake);if(p){p.stake=Math.max(10,+i.value||10);save();renderSlip()}});document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{$('#slip').classList.add('open');$('#scrim').classList.add('show')});document.querySelectorAll('[data-stats]').forEach(b=>b.onclick=()=>{expandedMatch=expandedMatch===+b.dataset.stats?null:+b.dataset.stats;renderMatches()})}
-function renderSlip(){let total=picks.reduce((s,p)=>s+p.stake,0);$('#slip-count').textContent=picks.length;$('#chosen-count').textContent=picks.length;$('#stake-total').textContent=`${format(total)} แต้ม`;$('#confirm-picks').disabled=!picks.length;$('#slip-items').innerHTML=picks.length?picks.map(p=>{let m=matches.find(x=>x.id===p.matchId),f=m[p.fighter];return `<article class="slip-item"><button data-remove="${m.id}">×</button><small>${m.title} · ${m.date}</small><b>${f.name}</b><div><span>${format(p.stake)} แต้ม</span><em>นักกีฬาที่เลือก</em></div></article>`}).join(''):'<p class="empty">NO PICKS เพิ่มในรายการแล้ว<br /><small>เลือกนักกีฬาจากรายการแมตช์</small></p>';document.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{picks=picks.filter(p=>p.matchId!==+b.dataset.remove);save();renderMatches();renderSlip()})}
-function toast(s){let t=$('#toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600)}function updateBalance(){$('#balance').textContent=format(balance);$('#balance-large').childNodes[0].nodeValue=`${format(balance)} `};$('.filter-row').onclick=e=>{if(!e.target.matches('.filter'))return;$('.filter.active').classList.remove('active');e.target.classList.add('active');activeType=e.target.dataset.type;expandedMatch=null;renderMatches()};$('#open-slip').onclick=()=>{$('#slip').classList.add('open');$('#scrim').classList.add('show')};let close=()=>{$('#slip').classList.remove('open');$('#scrim').classList.remove('show')};$('#close-slip').onclick=close;$('#scrim').onclick=close;$('#confirm-picks').onclick=()=>{let total=picks.reduce((s,p)=>s+p.stake,0);if(total>balance)return toast('แต้มคงเหลือไม่เพียงพอ');balance-=total;picks=[];save();updateBalance();renderMatches();renderSlip();close();toast(`ยืนยันแล้ว · ใช้ ${format(total)} แต้ม`)};$('#copy-contact').onclick=async()=>{try{await navigator.clipboard.writeText('hello@ringpulse.example');toast('คัดลอกอีเมลแล้ว')}catch{toast('EMAIL: hello@ringpulse.example')}};updateBalance();renderMatches();renderSlip();
+const athletes = [
+  {name:'รถถัง',full:'รถถัง จิตรเมืองนนท์',en:'RODTANG',slug:'rodtang',country:'THAILAND'},
+  {name:'ซุปเปอร์เล็ก',full:'ซุปเปอร์เล็ก ซุปเปอร์เล็กมวยไทย',en:'SUPERLEK',slug:'superlek',country:'THAILAND'},
+  {name:'ตะวันฉาย',full:'ตะวันฉาย พีเค.แสนชัย',en:'TAWANCHAI',slug:'tawanchai',country:'THAILAND'},
+  {name:'ซุปเปอร์บอน',full:'ซุปเปอร์บอน ซุปเปอร์บอนเทรนนิงแคมป์',en:'SUPERBON',slug:'superbon',country:'THAILAND'},
+  {name:'แฮ็กเกอร์ตี',full:'โจนาธาน แฮ็กเกอร์ตี',en:'JONATHAN HAGGERTY',slug:'jonathan-haggerty',country:'UNITED KINGDOM'},
+  {name:'น้องโอ๋',full:'น้องโอ๋ ฮาม่ามวยไทย',en:'NONG-O',slug:'nong-o',country:'THAILAND'},
+];
+const source = athlete => `https://www.onefc.com/th/athletes/${athlete.slug}/`;
+$('#athlete-list').innerHTML = athletes.map((a, i) => `<a class="athlete-card" href="${source(a)}" target="_blank" rel="noopener noreferrer" aria-label="อ่านโปรไฟล์ ${a.full} บนเว็บไซต์ทางการ เปิดแท็บใหม่"><span class="athlete-number">0${i + 1}</span><small>${a.en}</small><h3>${a.name}</h3><p>${a.full}</p><span aria-hidden="true">↗</span></a>`).join('');
+const matches = [
+  {id:1,title:'THE DREAM MATCH',type:'muaythai',label:'มวยไทย',a:athletes[0],b:athletes[1]},
+  {id:2,title:'THE ART OF TIMING',type:'kickboxing',label:'คิกบ็อกซิง',a:athletes[2],b:athletes[3]},
+  {id:3,title:'HEART OF A FIGHTER',type:'muaythai',label:'มวยไทย',a:athletes[4],b:athletes[5]},
+];
+const savedGame = read('ring-game-v1', {});
+let balance = Number.isSafeInteger(savedGame.balance) && savedGame.balance >= 0 ? savedGame.balance : 1500;
+let history = Array.isArray(savedGame.history) ? savedGame.history.filter(h => h && typeof h.name === 'string' && Number.isSafeInteger(h.stake) && typeof h.at === 'string').slice(0,100) : [];
+let picks = [], activeType = 'all';
+function renderMatches() {
+  const query = $('#match-search').value.trim().toLocaleLowerCase();
+  const shown = matches.filter(m => (activeType === 'all' || m.type === activeType) && `${m.a.full} ${m.b.full} ${m.a.en} ${m.b.en}`.toLocaleLowerCase().includes(query));
+  $('#event-list').innerHTML = shown.length ? shown.map(m => {
+    const pick = picks.find(p => p.matchId === m.id);
+    return `<article class="match-card"><div class="match-cover"><span>FANTASY MATCHUP / 0${m.id}</span><h3>${m.title}</h3><p>คู่ชกจำลอง · ${m.label}</p></div><div class="match-body"><div class="match-label"><span>${m.label} / เลือกมุมที่คุณเชียร์</span><span>0${m.id}</span></div><div class="fighters">${['a','b'].map((side,index) => `${index ? '<b>VS</b>' : ''}<button class="fighter ${pick?.fighter === side ? 'selected' : ''}" data-pick="${side}" data-match="${m.id}" aria-pressed="${pick?.fighter === side}"><small>${m[side].country}</small><strong>${m[side].name}</strong><em>${pick?.fighter === side ? '✓ มุมของคุณ' : 'เลือกนักกีฬา'}</em></button>`).join('')}</div><div class="pick-area"><label>แต้มจำลอง<input type="number" min="10" max="1500" step="10" value="${pick?.stake ?? 100}" data-stake="${m.id}" aria-label="แต้มสำหรับคู่ ${m.a.name} และ ${m.b.name}" /></label><button class="add-pick" data-add="${m.id}" ${pick ? '' : 'disabled'}>${pick ? 'ดูรายการ ↗' : 'เลือกนักกีฬาก่อน'}</button></div></div></article>`;
+  }).join('') : '<p class="empty">ไม่พบคู่ชก ลองค้นหาชื่ออื่นหรือเลือกทุกคู่ชก</p>';
+}
+$('#event-list').addEventListener('click', event => {
+  const fighter = event.target.closest('[data-pick]');
+  if (fighter) {
+    const matchId = Number(fighter.dataset.match);
+    const existing = picks.find(p => p.matchId === matchId);
+    const stake = Number($(`[data-stake="${matchId}"]`).value);
+    if (existing) existing.fighter = fighter.dataset.pick;
+    else picks.push({matchId, fighter:fighter.dataset.pick, stake:Number.isSafeInteger(stake) && stake >= 10 && stake <= 1500 && stake % 10 === 0 ? stake : 100});
+    renderMatches(); renderSlip();
+  }
+  if (event.target.closest('[data-add]')) openModal('#slip-dialog');
+});
+$('#event-list').addEventListener('input', event => {
+  if (!event.target.matches('[data-stake]')) return;
+  const pick = picks.find(p => p.matchId === Number(event.target.dataset.stake));
+  if (pick) { pick.stake = Number(event.target.value); renderSlip(); }
+});
+$$('.filter').forEach(button => button.onclick = () => { activeType = button.dataset.type; $$('.filter').forEach(b => { b.classList.toggle('active', b === button); b.setAttribute('aria-pressed', String(b === button)); }); renderMatches(); });
+$('#match-search').oninput = renderMatches;
+function renderSlip() {
+  $('#balance').textContent = format(balance); $('#slip-balance').textContent = format(balance);
+  $('#slip-count').textContent = picks.length;
+  const total = picks.reduce((sum, p) => sum + (Number.isFinite(p.stake) ? p.stake : 0), 0);
+  const invalid = picks.some(p => !Number.isSafeInteger(p.stake) || p.stake < 10 || p.stake > 1500 || p.stake % 10 !== 0);
+  $('#stake-total').textContent = `${format(total)} แต้ม`;
+  $('#slip-error').textContent = invalid ? 'ใช้แต้มครั้งละ 10 ตั้งแต่ 10 ถึง 1,500 แต้ม' : total > balance ? 'แต้มคงเหลือไม่เพียงพอ กรุณาลดจำนวนแต้ม' : '';
+  $('#confirm-picks').disabled = !picks.length || invalid || total > balance;
+  $('#slip-items').innerHTML = picks.length ? picks.map(p => { const m = matches.find(m => m.id === p.matchId); return `<article class="slip-item"><small>${m.title}</small><b>${m[p.fighter].full}</b><div>${format(p.stake)} แต้มจำลอง</div><button data-remove="${m.id}" aria-label="ลบ ${m[p.fighter].name}">×</button></article>`; }).join('') : '<p class="empty">ยังไม่มีรายการ เลือกนักกีฬาที่คุณเชียร์ได้จากคู่ชก</p>';
+}
+$('#slip-items').onclick = event => { const button = event.target.closest('[data-remove]'); if (button) { picks = picks.filter(p => p.matchId !== Number(button.dataset.remove)); renderMatches(); renderSlip(); } };
+$('#open-slip').onclick = () => openModal('#slip-dialog');
+$('#confirm-picks').onclick = () => {
+  renderSlip(); if ($('#confirm-picks').disabled) return;
+  const total = picks.reduce((sum,p) => sum + p.stake, 0);
+  const nextHistory = [...picks.map(p => ({name:matches.find(m => m.id === p.matchId)[p.fighter].full,stake:p.stake,at:new Date().toISOString()})),...history].slice(0,100);
+  if (!write('ring-game-v1', {balance:balance-total,history:nextHistory})) { $('#slip-error').textContent = 'บันทึกไม่ได้ กรุณาอนุญาตพื้นที่เก็บข้อมูลของเบราว์เซอร์'; return; }
+  balance -= total; history = nextHistory; picks = []; renderMatches(); renderSlip(); $('#slip-dialog').close(); toast('บันทึกมุมที่คุณเชียร์แล้ว');
+};
+$('#open-history').onclick = () => content('ประวัติการเลือกมุม', history.length ? `<p class="quiet-note">แต้มจำลอง ไม่มีการตัดสินผลหรือจ่ายรางวัล</p>${history.map(h => `<article class="slip-item"><small>${escapeHtml(h.at.slice(0,10))}</small><b>${escapeHtml(h.name)}</b><div>${format(h.stake)} แต้ม</div></article>`).join('')}` : '<p class="empty">ยังไม่มีประวัติ ลองเลือกนักกีฬาที่คุณเชียร์แล้วกดยืนยันรายการ</p>');
+
+const zones = {standard:{name:'Standard',price:800},premium:{name:'Premium',price:1500},ringside:{name:'Ringside',price:2500}};
+const ticketForm = $('#ticket-form');
+const storedTickets = read('ring-tickets-v1', []);
+let tickets = Array.isArray(storedTickets) ? storedTickets.filter(t => t && typeof t.id === 'string' && typeof t.holder === 'string' && Object.hasOwn(zones,t.zone) && Number.isInteger(t.quantity) && t.quantity >= 1 && t.quantity <= 6).slice(0,100) : [];
+function ticketTotal() { const zone = zones[ticketForm.elements.zone.value]; const quantity = Number(ticketForm.elements.quantity.value); const total = zone.price * quantity; $('#ticket-subtotal').textContent = money(total); $('#ticket-total').textContent = money(total); }
+$('#book-ticket').onclick = () => { ticketForm.reset(); $('#ticket-error').textContent = ''; ticketTotal(); openModal('#ticket-dialog'); };
+ticketForm.addEventListener('change', ticketTotal);
+function receipt(ticket) { return `<article class="ticket-receipt"><small>DEMO E-TICKET / ใช้เข้างานจริงไม่ได้</small><h3>RINGSIDE SESSIONS.</h3><p>31 ต.ค. 2569 · 18:00 น.<br />RING Studio · กรุงเทพฯ (สถานที่สมมติ)</p><dl><dt>ชื่อบนบัตร</dt><dd>${escapeHtml(ticket.holder)}</dd><dt>โซนที่นั่ง</dt><dd>${zones[ticket.zone].name}</dd><dt>จำนวน</dt><dd>${ticket.quantity} ที่นั่ง</dd><dt>ยอดจำลอง</dt><dd>${money(zones[ticket.zone].price * ticket.quantity)}</dd><dt>การชำระเงิน</dt><dd>ไม่มีการเรียกเก็บเงิน</dd></dl><p class="receipt-code">${escapeHtml(ticket.id)}</p><small class="quiet-note">ไม่ใช่หลักฐานชำระเงิน ไม่ได้ระบุเลขที่นั่งจริง และไม่เกี่ยวข้องกับผู้จัดการแข่งขันรายอื่น</small><button class="button button-dark" data-download="${escapeHtml(ticket.id)}">ดาวน์โหลดบัตร (.txt) ↓</button></article>`; }
+ticketForm.onsubmit = event => {
+  event.preventDefault(); if (!ticketForm.reportValidity()) return;
+  const zone = ticketForm.elements.zone.value, quantity = Number(ticketForm.elements.quantity.value), holder = ticketForm.elements.holder.value.trim();
+  if (!Object.hasOwn(zones,zone) || !Number.isInteger(quantity) || quantity < 1 || quantity > 6 || !holder || holder.length > 80) { $('#ticket-error').textContent = 'กรุณาตรวจสอบโซน จำนวน และชื่อบนบัตร'; return; }
+  const ticket = {id:`RING-DEMO-${crypto.randomUUID()}`,zone,quantity,holder};
+  const next = [ticket,...tickets].slice(0,100);
+  if (!write('ring-tickets-v1',next)) { $('#ticket-error').textContent = 'บันทึกบัตรไม่ได้ กรุณาอนุญาตพื้นที่เก็บข้อมูลของเบราว์เซอร์แล้วลองใหม่'; return; }
+  tickets = next; $('#ticket-dialog').close(); content('จองบัตรจำลองสำเร็จ', `<p>เก็บบัตรไว้แล้ว เปิดดูได้ที่ “บัตรของฉัน” ในเบราว์เซอร์นี้</p>${receipt(ticket)}<button class="text-button" id="print-ticket">พิมพ์บัตร / บันทึก PDF ↗</button>`);
+  $('#print-ticket').onclick = () => window.print();
+};
+$('#my-tickets').onclick = () => content('บัตรของฉัน', tickets.length ? `<p class="quiet-note">บัตรจำลองที่เก็บในเบราว์เซอร์นี้ · ไม่มีการชำระเงินจริง</p>${tickets.map(receipt).join('')}` : '<p class="empty">ยังไม่มีบัตร ลองกด “เลือกบัตร” เพื่อจองประสบการณ์ข้างเวที</p>');
+$('#content-body').addEventListener('click', event => {
+  const download = event.target.closest('[data-download]'); if (!download) return;
+  const ticket = tickets.find(t => t.id === download.dataset.download); if (!ticket) return;
+  const text = `RING / DEMO E-TICKET\nบัตรจำลองเพื่อการศึกษา ใช้เข้างานจริงไม่ได้\n\nRINGSIDE SESSIONS\n31 ตุลาคม 2569 เวลา 18:00 น.\nRING Studio กรุงเทพฯ (สถานที่สมมติ)\nชื่อ: ${ticket.holder}\nโซน: ${zones[ticket.zone].name}\nจำนวน: ${ticket.quantity} ที่นั่ง\nยอดจำลอง: ${money(zones[ticket.zone].price*ticket.quantity)}\nไม่มีการชำระเงิน\nรหัส: ${ticket.id}\n\nนักกีฬาในเว็บไซต์ไม่ได้ร่วมงานนี้ ไม่เกี่ยวข้องกับ ONE Championship`;
+  const url = URL.createObjectURL(new Blob(['\uFEFF',text],{type:'text/plain;charset=utf-8'})); const link = document.createElement('a'); link.href=url; link.download=`${ticket.id}.txt`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
+});
+
+const articles = {
+  'eight-limbs':{title:'ศิลปะของอาวุธทั้งแปด',paragraphs:['มวยไทยเปิดพื้นที่ให้หมัด เท้า เข่า และศอกทำงานร่วมกัน นักชกจึงต้องคิดถึงระยะห่างและสมดุลของร่างกายอยู่เสมอ อาวุธที่เหมาะกับระยะไกลอาจใช้ไม่ได้เมื่อคู่ต่อสู้เข้าประชิด','ลองเริ่มดูจากเท้าของนักกีฬา ใครเป็นฝ่ายขยับเข้าหา ใครรักษาระยะ และใครออกอาวุธแล้วกลับมาตั้งหลักได้ ลำดับเล็ก ๆ เหล่านี้ช่วยให้เห็นเกมมากกว่าจังหวะปะทะเพียงอย่างเดียว']},
+  'read-the-fight':{title:'อ่านเกมก่อนเสียงระฆัง',paragraphs:['ก่อนเริ่มชม ลองทำความรู้จักนักกีฬาจากแหล่งข้อมูลทางการ แล้วตรวจสอบกติกาของรายการนั้น เพราะรูปแบบการแข่งขันและเกณฑ์ให้คะแนนอาจต่างกัน','ระหว่างชม ให้สังเกตว่าใครคุมระยะได้ ใครออกอาวุธตรงจังหวะ และใครเปลี่ยนวิธีรับมือได้เมื่อสถานการณ์เปลี่ยน ไม่จำเป็นต้องรีบตัดสินผู้ชนะจากอาวุธครั้งเดียว']},
+  'respect':{title:'ต่างมุมเดียวกัน',paragraphs:['นักสู้ทั้งสองมุมต่างผ่านการฝึกซ้อมและความกดดัน การเชียร์จึงเป็นโอกาสที่จะชื่นชมความพยายามโดยไม่ลดคุณค่าของอีกฝ่าย','เราอาจชอบนักกีฬาคนละคน แต่ร่วมกันสร้างพื้นที่ที่สนุกและให้เกียรติกันได้ ลองพูดถึงสิ่งที่เห็นบนเวที อธิบายเหตุผลของมุมมอง และพร้อมรับฟังความเห็นที่ต่างออกไป']},
+};
+$$('[data-article]').forEach(button => button.onclick = () => { const a = articles[button.dataset.article]; content(a.title, `<p class="eyebrow">RING ORIGINAL / บทความเขียนสำหรับโครงงาน</p>${a.paragraphs.map(p => `<p>${p}</p>`).join('')}`); });
+$('#about-open').onclick = () => content('เกี่ยวกับ RING และแหล่งข้อมูล', `<p>โครงงานเว็บไซต์ภาษาไทยสำหรับคนรักศิลปะการต่อสู้ ออกแบบและเขียนบทความขึ้นใหม่ ภาพสังเวียนเป็นกราฟิก SVG ที่สร้างสำหรับโครงงาน ไม่ใช้ภาพนักกีฬา โลโก้ หรือบทความที่คัดลอกจาก ONE</p><p>ชื่อนักกีฬาใช้อ้างอิงเพื่อให้ข้อมูล คู่ชกทั้งหมดเป็นจินตนาการ ไม่มีสถิติแต่งขึ้น ไม่มีการรับรองจากนักกีฬา และไม่ใช่ประกาศการแข่งขันจริง</p><p>ระบบบัตรเป็นการสาธิตสำหรับงานสมมติ ไม่มีการรับเงินจริงหรือสำรองที่นั่งจริง ส่วนประวัติแต้มและบัตรเก็บบนเบราว์เซอร์นี้ บัญชีสมาชิกใช้ระบบเซิร์ฟเวอร์แยกต่างหาก</p><h3>แหล่งข้อมูลชื่อนักกีฬา</h3><ul>${athletes.map(a => `<li><a href="${source(a)}" target="_blank" rel="noopener noreferrer">${a.full} ↗</a></li>`).join('')}</ul><p class="quiet-note">ตรวจสอบแหล่งข้อมูล 25 กันยายน 2569 · ชื่อค่ายอาจเปลี่ยนแปลงได้<br />แบบอักษร Noto Sans Thai และ Barlow Condensed ผ่าน Google Fonts</p>`);
+
+const authBase = (import.meta.env.VITE_API_URL || '/api/auth').replace(/\/$/,'');
+const authForm = $('#auth-form'); let authMode = 'login', currentUser = null;
+function paintUser(user) { currentUser=user; $('#auth-open').hidden=Boolean(user); $('#profile-button').hidden=!user; if(user) { $('#profile-name').textContent=user.name; $('#profile-avatar').textContent=(user.name || 'R').trim().charAt(0); } }
+function setAuthMode(mode) { authMode=mode; $$('.auth-tab').forEach(b => { b.classList.toggle('active',b.dataset.mode===mode); b.setAttribute('aria-pressed',String(b.dataset.mode===mode)); }); $('.name-field').hidden=mode==='login'; authForm.elements.name.required=mode==='register'; authForm.elements.password.autocomplete=mode==='register'?'new-password':'current-password'; $('#auth-title').textContent=mode==='register'?'สมัครสมาชิก RING':'เข้าสู่ระบบ RING'; $('#auth-submit').textContent=mode==='register'?'สมัครสมาชิก ↗':'เข้าสู่ระบบ ↗'; }
+$('#auth-open').onclick=() => { $('#auth-error').textContent=''; openModal('#auth-dialog'); };
+$$('.auth-tab').forEach(b => b.onclick=() => { setAuthMode(b.dataset.mode); $('#auth-error').textContent=''; });
+$('#profile-button').onclick=() => { content('บัญชีของฉัน',`<p>${escapeHtml(currentUser?.name || '')}</p><p>${escapeHtml(currentUser?.email || '')}</p><button id="signout" class="button button-dark">ออกจากระบบ</button>`); $('#signout').onclick=() => { try { localStorage.removeItem('ring-auth-token'); } catch {} paintUser(null); $('#content-dialog').close(); toast('ออกจากระบบแล้ว'); }; };
+authForm.onsubmit=async event => {
+  event.preventDefault(); if ($('#auth-submit').disabled || !authForm.reportValidity()) return;
+  const data=Object.fromEntries(new FormData(authForm)); data.email=data.email.trim(); if(authMode==='register') { data.name=data.name.trim(); if(!data.name) { $('#auth-error').textContent='กรุณากรอกชื่อที่แสดง'; return; } }
+  $('#auth-submit').disabled=true; $$('.auth-tab').forEach(b => b.disabled=true); $('#auth-error').textContent=''; $('#auth-submit').textContent='กำลังเชื่อมต่อ…';
+  try {
+    const response=await fetch(`${authBase}/${authMode==='register'?'register':'login'}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000)});
+    const result=await response.json().catch(() => ({}));
+    if(!response.ok) throw new Error(response.status>=500?'ระบบสมาชิกยังไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง':response.status===401?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':response.status===409?'อีเมลนี้มีบัญชีแล้ว กรุณาเข้าสู่ระบบ':'กรุณาตรวจสอบข้อมูลแล้วลองอีกครั้ง');
+    if(!result.token || !result.user || typeof result.user.name!=='string') throw new Error('ข้อมูลตอบกลับไม่ครบ กรุณาลองใหม่');
+    try { localStorage.setItem('ring-auth-token',result.token); } catch { toast('เข้าสู่ระบบแล้ว แต่ไม่สามารถจดจำบัญชีในเบราว์เซอร์นี้'); }
+    paintUser(result.user); $('#auth-dialog').close(); authForm.reset(); toast('ยินดีต้อนรับ '+result.user.name);
+  } catch(error) { $('#auth-error').textContent=error.name==='TimeoutError'?'การเชื่อมต่อใช้เวลานาน กรุณาลองใหม่':error instanceof TypeError?'เชื่อมต่อระบบสมาชิกไม่ได้ กรุณาลองใหม่ภายหลัง':error.message; }
+  finally { $('#auth-submit').disabled=false; $$('.auth-tab').forEach(b => b.disabled=false); setAuthMode(authMode); }
+};
+async function restoreSession() { try { const token=localStorage.getItem('ring-auth-token'); if(!token) return; const response=await fetch(`${authBase}/me`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(10000)}); if(response.status===401) { localStorage.removeItem('ring-auth-token'); return; } if(response.ok) { const result=await response.json(); if(typeof result.user?.name==='string') paintUser(result.user); } } catch { /* Offline users can still explore and book demo tickets. */ } }
+renderMatches(); renderSlip(); ticketTotal(); setAuthMode('login'); restoreSession();
