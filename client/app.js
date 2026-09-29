@@ -171,3 +171,5 @@ authForm.onsubmit=async event => {
 };
 async function restoreSession() { try { const token=localStorage.getItem('ring-auth-token'); if(!token) return; const response=await fetch(`${authBase}/me`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(10000)}); if(response.status===401) { localStorage.removeItem('ring-auth-token'); return; } if(response.ok) { const result=await response.json(); if(typeof result.user?.name==='string') paintUser(result.user); } } catch { /* Offline users can still explore and book demo tickets. */ } }
 renderMatches(); renderSlip(); ticketTotal(); setAuthMode('login'); restoreSession();
+
+import './live.js';
