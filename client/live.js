@@ -1,4 +1,5 @@
 import './live.css';
+import { hasPass, openPass } from './membership.js';
 
 const player = document.querySelector('#live-player');
 const toggle = document.querySelector('#live-toggle');
@@ -8,7 +9,7 @@ const channels = {
   ringside: ['02', 'RINGSIDE VIEW', 'ชิดขอบเวทีทุกจังหวะ', 'มุมภาพจำลองระยะใกล้ ให้คุณสัมผัสบรรยากาศข้างสังเวียน'],
   studio: ['03', 'FIGHT IQ STUDIO', 'อ่านเกมไปด้วยกัน', 'จับตาระยะเท้า การคุมพื้นที่ และจังหวะออกอาวุธก่อนเลือกมุมที่เชียร์'],
 };
-let playing = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+let playing = hasPass() && !matchMedia('(prefers-reduced-motion: reduce)').matches;
 let elapsed = 0;
 let lastTick = performance.now();
 function paintPlayback() {
@@ -17,11 +18,13 @@ function paintPlayback() {
   toggle.setAttribute('aria-label', playing ? 'พักภาพจำลอง' : 'เล่นภาพจำลอง');
 }
 toggle.onclick = () => {
+  if (!hasPass()) return openPass();
   playing = !playing; lastTick = performance.now(); paintPlayback();
   status.textContent = playing ? 'กำลังเล่นภาพจำลอง ไม่มีวิดีโอหรือเสียงการแข่งขันจริง' : 'พักภาพจำลองแล้ว กดเล่นภาพเพื่อรับชมต่อ';
 };
 document.querySelectorAll('[data-channel]').forEach(button => {
   button.onclick = () => {
+    if (!hasPass()) return openPass();
     const key = button.dataset.channel;
     const [number, kicker, title, description] = channels[key];
     player.dataset.camera = key;
@@ -39,6 +42,7 @@ document.querySelectorAll('[data-channel]').forEach(button => {
 const fullscreen = document.querySelector('#live-fullscreen');
 fullscreen.hidden = !document.fullscreenEnabled;
 fullscreen.onclick = async () => {
+  if (!hasPass()) return openPass();
   try {
     if (document.fullscreenElement === player) await document.exitFullscreen();
     else await player.requestFullscreen();
@@ -52,9 +56,17 @@ document.addEventListener('fullscreenchange', () => {
 document.addEventListener('visibilitychange', () => { lastTick = performance.now(); });
 setInterval(() => {
   const now = performance.now();
-  if (playing && !document.hidden) elapsed += now - lastTick;
+  if (playing && hasPass() && !document.hidden) elapsed += now - lastTick;
   lastTick = now;
   const seconds = Math.floor(elapsed / 1000);
   document.querySelector('#live-elapsed').textContent = `${String(Math.floor(seconds / 60)).padStart(2,'0')}:${String(seconds % 60).padStart(2,'0')}`;
 }, 250);
 paintPlayback();
+document.addEventListener('ring-pass-change', () => {
+  if (!hasPass()) {
+    playing = false;
+    if (document.fullscreenElement === player) document.exitFullscreen().catch(() => {});
+    status.textContent = 'สมัคร RING PASS เพื่อรับชมช่องจำลอง';
+  }
+  lastTick = performance.now(); paintPlayback();
+});

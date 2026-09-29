@@ -15,6 +15,7 @@ try {
   await send('Page.navigate',{url:'http://127.0.0.1:5177'});
   await send('Page.bringToFront');
   for(let i=0;i<100;i++){await new Promise(r=>setTimeout(r,100));if(await evaluate('!!document.querySelector("#live-toggle")?.onclick'))break;}
+  await evaluate('localStorage.removeItem("ring-pass-v1");window.dispatchEvent(new StorageEvent("storage",{key:"ring-pass-v1"}));document.querySelector("[data-plan=monthly]").click();document.querySelector("#pass-consent").checked=true;document.querySelector("#pass-form").requestSubmit();document.querySelector("#live-toggle").click()');
   await evaluate('document.querySelector("[data-channel=ringside]").click()');
   assert.equal(await evaluate('document.querySelector("#live-player").dataset.camera'),'ringside');
   assert.equal(await evaluate('document.querySelectorAll("[data-channel][aria-pressed=true]").length'),1);
@@ -26,7 +27,10 @@ try {
   await evaluate('document.querySelector("[data-channel=studio]").click()');
   assert.equal(await evaluate('document.querySelector("#live-player").classList.contains("paused")'),true);
   await evaluate('document.querySelector("#live-toggle").click()');
-  await new Promise(r=>setTimeout(r,1200));
+  for(let i=0;i<30;i++) {
+    await new Promise(r=>setTimeout(r,100));
+    if(await evaluate('document.querySelector("#live-elapsed").textContent') !== time) break;
+  }
   assert.notEqual(await evaluate('document.querySelector("#live-elapsed").textContent'),time);
   await evaluate('Promise.all([...document.querySelectorAll(".story img")].map(i=>{i.loading="eager";return i.decode()}))');
   assert.equal(await evaluate('new Set([...document.querySelectorAll(".story img")].map(i=>i.src)).size'),3);
