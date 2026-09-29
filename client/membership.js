@@ -25,8 +25,6 @@ export function openPass(plan = 'monthly') {
 function renderPass() {
   const active = hasPass();
   $('#pass-account').hidden = !active; $('#pass-plans').hidden = active;
-  $('#pass-lock').hidden = active;
-  $('#live-player').classList.toggle('membership-locked', !active);
   document.querySelectorAll('[data-plan]').forEach(button => { button.disabled = active; });
   if (active) {
     $('#pass-name').textContent = `RING PASS ${plans[membership.plan].name} · สมาชิกจำลอง`;
@@ -43,14 +41,14 @@ $('#pass-form').onsubmit = event => {
   try { localStorage.setItem(key,JSON.stringify(next)); }
   catch { $('#pass-error').textContent = 'บันทึกสิทธิ์ไม่ได้ กรุณาอนุญาตพื้นที่เก็บข้อมูลแล้วลองอีกครั้ง'; return; }
   membership = next; renderPass(); $('#pass-dialog').close();
-  $('#live-status').textContent = 'สมัครสมาชิกจำลองสำเร็จ เลือกช่องแล้วกดเล่นภาพได้เลย ไม่มีการเรียกเก็บเงินจริง';
-  $('#live-toggle').focus();
+  $('#pass-status').textContent = 'สมัครสมาชิกจำลองสำเร็จ ตรวจสอบวันหมดอายุได้ด้านบน ไม่มีการเรียกเก็บเงินจริง';
+  $('#pass-end').focus();
 };
 $('#pass-end').onclick = () => {
   try { localStorage.removeItem(key); }
-  catch { $('#live-status').textContent = 'ล้างสิทธิ์จำลองไม่ได้ กรุณาลองอีกครั้ง'; return; }
+  catch { $('#pass-status').textContent = 'ล้างสิทธิ์จำลองไม่ได้ กรุณาลองอีกครั้ง'; return; }
   membership = null; renderPass();
-  $('#live-status').textContent = 'สิ้นสุดสมาชิกจำลองแล้ว เลือกแพ็กเกจเพื่อทดลองสมัครใหม่ได้';
+  $('#pass-status').textContent = 'สิ้นสุดสมาชิกจำลองแล้ว เลือกแพ็กเกจเพื่อทดลองสมัครใหม่ได้';
 };
 let wasActive = hasPass();
 setInterval(() => {
