@@ -67,7 +67,7 @@ function renderSlip() {
   const total = picks.reduce((sum, p) => sum + (Number.isFinite(p.stake) ? p.stake : 0), 0);
   const invalid = picks.some(p => !Number.isSafeInteger(p.stake) || p.stake < 10 || p.stake > 1500 || p.stake % 10 !== 0);
   $('#stake-total').textContent = `${format(total)} แต้ม`;
-  $('#slip-error').textContent = invalid ? 'ใช้แต้มครั้งละ 10 ตั้งแต่ 10 ถึง 1,500 แต้ม' : total > balance ? 'แต้มคงเหลือไม่เพียงพอ กรุณาลดจำนวนแต้ม' : '';
+  $('#slip-error').textContent = invalid ? 'ใช้แต้มครั้งละ 10 ตั้งแต่ 10 ถึง 1,500 แต้ม' : total > balance ? 'แต้มไม่พอ กดเติมแต้มจำลองฟรีแล้วกลับมายืนยันได้เลย' : '';
   $('#confirm-picks').disabled = !picks.length || invalid || total > balance;
   $('#slip-items').innerHTML = picks.length ? picks.map(p => { const m = matches.find(m => m.id === p.matchId); return `<article class="slip-item"><small>${m.title}</small><b>${m[p.fighter].full}</b><div>${format(p.stake)} แต้มจำลอง</div><button data-remove="${m.id}" aria-label="ลบ ${m[p.fighter].name}">×</button></article>`; }).join('') : '<p class="empty">ยังไม่มีรายการ เลือกนักกีฬาที่คุณเชียร์ได้จากคู่ชก</p>';
 }
@@ -83,6 +83,37 @@ $('#confirm-picks').onclick = () => {
 $('#open-history').onclick = () => content('ประวัติการเลือกมุม', history.length ? `<p class="quiet-note">แต้มจำลอง ไม่มีการตัดสินผลหรือจ่ายรางวัล</p>${history.map(h => `<article class="slip-item"><small>${escapeHtml(h.at.slice(0,10))}</small><b>${escapeHtml(h.name)}</b><div>${format(h.stake)} แต้ม</div></article>`).join('')}` : '<p class="empty">ยังไม่มีประวัติ ลองเลือกนักกีฬาที่คุณเชียร์แล้วกดยืนยันรายการ</p>');
 
 const zones = {standard:{name:'Standard',price:800},premium:{name:'Premium',price:1500},ringside:{name:'Ringside',price:2500}};
+const eventStartsAt = Date.parse('2026-10-31T18:00:00+07:00');
+const checkoutUrl = import.meta.env.VITE_TICKET_CHECKOUT_URL?.trim();
+if (checkoutUrl) {
+  try {
+    const url = new URL(checkoutUrl);
+    if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Invalid checkout URL');
+    const link = document.createElement('a');
+    link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    link.className = 'text-button'; link.textContent = 'ดูรายการและซื้อบัตรจริงบนเว็บไซต์ผู้จำหน่าย ↗';
+    $('.ticket-info').append(link);
+  } catch { console.error('VITE_TICKET_CHECKOUT_URL must be a public HTTPS URL'); }
+}
+function updateCountdown() {
+  const left = Math.max(0, Math.ceil((eventStartsAt - Date.now()) / 1000));
+  const units = {days:Math.floor(left / 86400),hours:Math.floor(left / 3600) % 24,minutes:Math.floor(left / 60) % 60,seconds:left % 60};
+  Object.entries(units).forEach(([unit,value]) => { $(`[data-time="${unit}"]`).textContent = String(value).padStart(2,'0'); });
+  $('#countdown-label').textContent = left ? 'นับถอยหลังสู่งานจำลอง · เวลาไทย' : 'ถึงเวลาเริ่มงานจำลองแล้ว';
+  $('#book-ticket').disabled = !left;
+  if (!left) $('#book-ticket').textContent = 'ปิดรับจองแล้ว';
+}
+$$('[data-topup]').forEach(button => button.onclick = () => { $('#topup-error').textContent = ''; openModal('#topup-dialog'); });
+$$('[data-credit]').forEach(button => button.onclick = () => {
+  const amount = Number(button.dataset.credit);
+  if (![500,1500,5000].includes(amount) || !Number.isSafeInteger(balance + amount)) return;
+  if (!write('ring-game-v1',{balance:balance+amount,history})) {
+    $('#topup-error').textContent = 'บันทึกไม่ได้ กรุณาอนุญาตพื้นที่เก็บข้อมูลของเบราว์เซอร์'; return;
+  }
+  balance += amount; renderSlip(); $('#topup-dialog').close();
+  toast(`เติมสำเร็จ +${format(amount)} แต้ม · คงเหลือ ${format(balance)} แต้ม`);
+});
+updateCountdown(); setInterval(updateCountdown,1000);
 const ticketForm = $('#ticket-form');
 const storedTickets = read('ring-tickets-v1', []);
 let tickets = Array.isArray(storedTickets) ? storedTickets.filter(t => t && typeof t.id === 'string' && typeof t.holder === 'string' && Object.hasOwn(zones,t.zone) && Number.isInteger(t.quantity) && t.quantity >= 1 && t.quantity <= 6).slice(0,100) : [];
@@ -92,6 +123,7 @@ ticketForm.addEventListener('change', ticketTotal);
 function receipt(ticket) { return `<article class="ticket-receipt"><small>DEMO E-TICKET / ใช้เข้างานจริงไม่ได้</small><h3>RINGSIDE SESSIONS.</h3><p>31 ต.ค. 2569 · 18:00 น.<br />RING Studio · กรุงเทพฯ (สถานที่สมมติ)</p><dl><dt>ชื่อบนบัตร</dt><dd>${escapeHtml(ticket.holder)}</dd><dt>โซนที่นั่ง</dt><dd>${zones[ticket.zone].name}</dd><dt>จำนวน</dt><dd>${ticket.quantity} ที่นั่ง</dd><dt>ยอดจำลอง</dt><dd>${money(zones[ticket.zone].price * ticket.quantity)}</dd><dt>การชำระเงิน</dt><dd>ไม่มีการเรียกเก็บเงิน</dd></dl><p class="receipt-code">${escapeHtml(ticket.id)}</p><small class="quiet-note">ไม่ใช่หลักฐานชำระเงิน ไม่ได้ระบุเลขที่นั่งจริง และไม่เกี่ยวข้องกับผู้จัดการแข่งขันรายอื่น</small><button class="button button-dark" data-download="${escapeHtml(ticket.id)}">ดาวน์โหลดบัตร (.txt) ↓</button></article>`; }
 ticketForm.onsubmit = event => {
   event.preventDefault(); if (!ticketForm.reportValidity()) return;
+  if (Date.now() >= eventStartsAt) { $('#ticket-error').textContent = 'งานจำลองเริ่มแล้ว ปิดรับจองบัตร'; return; }
   const zone = ticketForm.elements.zone.value, quantity = Number(ticketForm.elements.quantity.value), holder = ticketForm.elements.holder.value.trim();
   if (!Object.hasOwn(zones,zone) || !Number.isInteger(quantity) || quantity < 1 || quantity > 6 || !holder || holder.length > 80) { $('#ticket-error').textContent = 'กรุณาตรวจสอบโซน จำนวน และชื่อบนบัตร'; return; }
   const ticket = {id:`RING-DEMO-${crypto.randomUUID()}`,zone,quantity,holder};
